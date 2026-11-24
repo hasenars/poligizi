@@ -1,90 +1,188 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  LineChart, 
-  Calendar, 
-  LogOut, 
-  Heart 
-} from 'lucide-react';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Baby,
+  CalendarDays,
+  ChartLine,
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react";
+import type { User } from "@/types";
 
-const menuItems = [
+interface SidebarOrangTuaProps {
+  user?: User;
+}
+
+interface ParentNavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const navigationItems: ParentNavItem[] = [
   {
-    title: 'Ringkasan Balita',
-    href: '/orangtua/dashboard',
-    icon: Home,
+    href: "/orangtua/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
   },
   {
-    title: 'Kurva & Riwayat',
-    href: '/orangtua/kurva-riwayat',
-    icon: LineChart,
+    href: "/orangtua/kurva-riwayat",
+    label: "Kurva & Riwayat",
+    icon: ChartLine,
   },
   {
-    title: 'Jadwal Posyandu',
-    href: '/orangtua/jadwal',
-    icon: Calendar,
+    href: "/orangtua/jadwal",
+    label: "Jadwal Posyandu",
+    icon: CalendarDays,
   },
 ];
 
-export const SidebarOrangTua: React.FC = () => {
+const defaultParent: User = {
+  id: "orangtua-demo",
+  nama: "Ibu Siti Aminah",
+  email: "",
+  role: "orangtua",
+};
+
+function NavigationLinks({
+  pathname,
+  mobile = false,
+}: {
+  pathname: string;
+  mobile?: boolean;
+}) {
+  return (
+    <>
+      {navigationItems.map(({ href, label, icon: Icon }) => {
+        const isActive = pathname === href;
+
+        return (
+          <Link
+            aria-current={isActive ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-xl font-medium transition ${
+              mobile
+                ? `min-h-14 flex-1 flex-col justify-center gap-1 px-1 text-[11px] ${
+                    isActive
+                      ? "bg-[#00A896]/10 text-[#008f80]"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                  }`
+                : `px-3.5 py-3 text-sm ${
+                    isActive
+                      ? "bg-[#00A896]/10 text-[#008f80]"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`
+            }`}
+            href={href}
+            key={href}
+          >
+            <Icon
+              aria-hidden="true"
+              className="h-5 w-5"
+              strokeWidth={isActive ? 2.25 : 1.8}
+            />
+            <span className={mobile ? "text-center leading-tight" : undefined}>
+              {label}
+            </span>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+export default function SidebarOrangTua({
+  user = defaultParent,
+}: SidebarOrangTuaProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col justify-between p-4 font-sans border-r border-slate-800">
-      <div>
-        {/* Brand Logo & Header */}
-        <div className="flex items-center gap-3 px-3 py-4 mb-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#00A896] flex items-center justify-center text-white shadow-sm">
-            <Heart className="w-6 h-6 fill-current" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg text-white tracking-wide">PoliGizi</h1>
-            <span className="text-[11px] font-medium bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              Orang Tua
+    <>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-100 bg-white px-5 py-6 lg:flex">
+        <Link
+          className="mb-9 flex items-center gap-3 px-2"
+          href="/orangtua/dashboard"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00A896] text-white shadow-sm shadow-[#00A896]/20">
+            <HeartPulse aria-hidden="true" className="h-6 w-6" />
+          </span>
+          <span>
+            <span className="block text-lg font-bold tracking-tight text-slate-900">
+              PoliGizi
+            </span>
+            <span className="block text-xs text-slate-500">
+              Sahabat tumbuh kembang
+            </span>
+          </span>
+        </Link>
+
+        <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+          Menu utama
+        </p>
+        <nav aria-label="Navigasi Orang Tua" className="flex flex-col gap-1.5">
+          <NavigationLinks pathname={pathname} />
+        </nav>
+
+        <div className="mt-auto">
+          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00A896]/10 text-[#008f80]">
+              <Baby aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-slate-800">
+                {user.nama}
+              </span>
+              <span className="block text-xs text-slate-500">
+                Orang Tua Balita
+              </span>
             </span>
           </div>
+          <Link
+            className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600"
+            href="/login"
+          >
+            <LogOut aria-hidden="true" className="h-5 w-5" />
+            Keluar
+          </Link>
         </div>
+      </aside>
 
-        {/* Navigation Menu */}
-        <nav className="space-y-1.5">
-          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-            Pemantauan Mandiri
-          </p>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-[#00A896] text-white shadow-sm font-semibold'
-                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span>{item.title}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Footer / Logout */}
-      <div className="pt-4 border-t border-slate-800/80">
+      <header className="flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3 sm:px-6 lg:hidden">
         <Link
-          href="/login"
-          className="flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-all duration-200"
+          className="flex min-w-0 items-center gap-2.5"
+          href="/orangtua/dashboard"
         >
-          <LogOut className="w-5 h-5 text-rose-400" />
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00A896] text-white">
+            <HeartPulse aria-hidden="true" className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-slate-900">
+              PoliGizi
+            </span>
+            <span className="block max-w-[10rem] truncate text-xs text-slate-500">
+              {user.nama} · Orang Tua Balita
+            </span>
+          </span>
+        </Link>
+        <Link
+          aria-label="Keluar"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-500 transition hover:bg-red-50 hover:text-red-600"
+          href="/login"
+        >
+          <LogOut aria-hidden="true" className="h-4 w-4" />
           <span>Keluar</span>
         </Link>
-      </div>
-    </aside>
+      </header>
+
+      <nav
+        aria-label="Navigasi Orang Tua mobile"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-100 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_-18px_rgba(15,76,70,0.3)] backdrop-blur lg:hidden"
+      >
+        <NavigationLinks mobile pathname={pathname} />
+      </nav>
+    </>
   );
-};
+}

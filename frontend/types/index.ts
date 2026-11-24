@@ -1,5 +1,16 @@
+// frontend/types/index.ts
+
 export type StatusGizi = 'normal' | 'stunting' | 'wasting' | 'underweight' | 'overweight';
- 
+export type RoleUser = 'kader' | 'orangtua' | 'admin';
+
+export interface User {
+  id: string;
+  nama: string;
+  email: string;
+  role: RoleUser;
+  posyandu?: string;
+}
+
 export interface Balita {
   id: string;
   nik: string;
@@ -12,7 +23,7 @@ export interface Balita {
   tbTerakhir?: number;
   statusGiziTerakhir?: StatusGizi;
 }
- 
+
 export interface CatatanPenimbangan {
   id: string;
   balitaId: string;
@@ -20,8 +31,8 @@ export interface CatatanPenimbangan {
   umurBulan: number;
   bb: number; // kg
   tb: number; // cm
-  lk?: number; // cm
-  lila?: number; // cm
+  lk?: number; // lingkar kepala (cm)
+  lila?: number; // lingkar lengan atas (cm)
   zscoreTbu?: number;
   zscoreBbu?: number;
   zscoreBbtb?: number;
