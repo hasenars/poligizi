@@ -2,31 +2,47 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $table = 'users';
+    protected $primaryKey = 'id_user';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'email',
+        'password',
+        'role',
+        'status_aktif',
+        'created_at',
+    ];
+
+    protected $hidden = [
+        'password',
+    ];
+
+    protected $casts = [
+        'status_aktif' => 'boolean',
+        'password' => 'hashed',
+    ];
+
+    public function admin()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(Admin::class, 'id_user', 'id_user');
+    }
+
+    public function kader()
+    {
+        return $this->hasOne(Kader::class, 'id_user', 'id_user');
+    }
+
+    public function orangTua()
+    {
+        return $this->hasOne(OrangTua::class, 'id_user', 'id_user');
     }
 }
