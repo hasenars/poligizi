@@ -11,6 +11,8 @@ use App\Models\Penimbangan;
 use App\Models\RekomendasiBalita;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PenimbanganController extends Controller
 {
@@ -42,7 +44,7 @@ class PenimbanganController extends Controller
             'lingkar_kepala_lk_cm' => 'required|numeric|min:20|max:70',
             'lingkar_lengan_lila_cm' => 'required|numeric|min:5|max:35',
             'cara_pengukuran' => 'required|in:telentang,berdiri',
-            // Hasil dari ML / Z-Score (sementara bisa dikirim langsung atau fallback default)
+            // Hasil dari ML / Z-Score (opsional karena otomatis diisi dari ML Service)
             'zscore_bbu' => 'nullable|numeric',
             'zscore_tbu' => 'nullable|numeric',
             'zscore_bbtb' => 'nullable|numeric',
@@ -54,7 +56,36 @@ class PenimbanganController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated) {
-            // 1. Simpan Data Penimbangan
+            $balita = Balita::findOrFail($validated['id_balita']);
+
+            // 1. Panggil Python ML Service untuk prediksi otomatis (fallback ke input/normal jika service mati)
+            $mlResult = [
+                'status_gizi_ml' => $validated['status_gizi_ml'] ?? 'normal',
+                'zscore_bbu' => $validated['zscore_bbu'] ?? null,
+                'zscore_tbu' => $validated['zscore_tbu'] ?? null,
+                'zscore_bbtb' => $validated['zscore_bbtb'] ?? null,
+            ];
+
+            try {
+                $response = Http::timeout(5)->post(env('ML_SERVICE_URL', 'http://127.0.0.1:8001') . '/predict', [
+                    'umur_bulan' => $validated['usia_bulan'],
+                    'jenis_kelamin' => $balita->jenis_kelamin,
+                    'bb_kg' => (float) $validated['berat_badan_kg'],
+                    'tb_cm' => (float) $validated['tinggi_badan_cm'],
+                ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $mlResult['status_gizi_ml'] = $json['status_gizi_ml'] ?? $mlResult['status_gizi_ml'];
+                    $mlResult['zscore_bbu'] = $json['zscore_bbu'] ?? $mlResult['zscore_bbu'];
+                    $mlResult['zscore_tbu'] = $json['zscore_tbu'] ?? $mlResult['zscore_tbu'];
+                    $mlResult['zscore_bbtb'] = $json['zscore_bbtb'] ?? $mlResult['zscore_bbtb'];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('ML Service tidak terjangkau, memakai fallback: ' . $e->getMessage());
+            }
+
+            // 2. Simpan Data Penimbangan
             $penimbangan = Penimbangan::create([
                 'id_balita' => $validated['id_balita'],
                 'id_kader' => $validated['id_kader'],
@@ -67,24 +98,24 @@ class PenimbanganController extends Controller
                 'cara_pengukuran' => $validated['cara_pengukuran'],
             ]);
 
-            $statusGizi = $validated['status_gizi_ml'] ?? 'normal';
+            $statusGizi = $mlResult['status_gizi_ml'];
             $isFlagged = $statusGizi !== 'normal' || $validated['lingkar_lengan_lila_cm'] < 12.5;
 
-            // 2. Simpan Hasil Klasifikasi (ML + Z-Score)
+            // 3. Simpan Hasil Klasifikasi (ML + Z-Score)
             $hasil = HasilKlasifikasi::create([
                 'id_penimbangan' => $penimbangan->id_penimbangan,
-                'zscore_bbu' => $validated['zscore_bbu'] ?? null,
-                'zscore_tbu' => $validated['zscore_tbu'] ?? null,
-                'zscore_bbtb' => $validated['zscore_bbtb'] ?? null,
+                'zscore_bbu' => $mlResult['zscore_bbu'],
+                'zscore_tbu' => $mlResult['zscore_tbu'],
+                'zscore_bbtb' => $mlResult['zscore_bbtb'],
                 'status_gizi_ml' => $statusGizi,
-                'status_stunting' => $validated['status_stunting'] ?? null,
-                'status_wasting' => $validated['status_wasting'] ?? null,
-                'status_weight_category' => $validated['status_weight_category'] ?? null,
+                'status_stunting' => $validated['status_stunting'] ?? ($statusGizi === 'stunting' ? 'stunting' : 'normal'),
+                'status_wasting' => $validated['status_wasting'] ?? ($statusGizi === 'wasting' ? 'wasting' : 'normal'),
+                'status_weight_category' => $validated['status_weight_category'] ?? $statusGizi,
                 'is_flagged' => $isFlagged,
                 'catatan_petugas' => $validated['catatan_petugas'] ?? null,
             ]);
 
-            // 3. RULE ENGINE: Ambil aturan berdasarkan Status Gizi + Panduan Kelompok Usia
+            // 4. RULE ENGINE: Ambil aturan berdasarkan Status Gizi + Panduan Kelompok Usia
             $usia = $validated['usia_bulan'];
             $aturanStatus = AturanRekomendasi::where('status_gizi_target', $statusGizi)->first();
             $aturanUsia = AturanRekomendasi::where('status_gizi_target', 'panduan_usia')
@@ -116,8 +147,7 @@ class PenimbanganController extends Controller
                 ]);
             }
 
-            // 4. Buat Notifikasi Otomatis untuk Orang Tua
-            $balita = Balita::findOrFail($validated['id_balita']);
+            // 5. Buat Notifikasi Otomatis untuk Orang Tua
             Notifikasi::create([
                 'id_orangtua' => $balita->id_orangtua,
                 'id_balita' => $balita->id_balita,

@@ -1,0 +1,26 @@
+[
+  {
+    "Model":"Random Forest",
+    "Accuracy":0.9881747013,
+    "F1-Score":0.9868135301,
+    "Training_Time_Sec":19.04
+  },
+  {
+    "Model":"Decision Tree",
+    "Accuracy":0.9827358879,
+    "F1-Score":0.982895346,
+    "Training_Time_Sec":1.18
+  },
+  {
+    "Model":"K-Nearest Neighbors",
+    "Accuracy":0.964565307,
+    "F1-Score":0.9622839882,
+    "Training_Time_Sec":0.84
+  },
+  {
+    "Model":"Support Vector Machine",
+    "Accuracy":0.8281417388,
+    "F1-Score":0.8582555071,
+    "Training_Time_Sec":2279.41
+  }
+]

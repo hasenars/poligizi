@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BalitaController;
 use App\Http\Controllers\Api\PenimbanganController;
@@ -21,4 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Input & Riwayat Penimbangan + Klasifikasi + Rekomendasi
     Route::get('/penimbangan', [PenimbanganController::class, 'index']);
     Route::post('/penimbangan', [PenimbanganController::class, 'store']);
+
+    // Dashboard Admin & Simulasi Perbandingan 4 Model ML
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::post('/simulasi-model', [AdminController::class, 'simulasiModel']);
+    Route::get('/simulasi-model/metrics', [AdminController::class, 'metricsModel']);
 });
